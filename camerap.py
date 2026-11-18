@@ -13,17 +13,9 @@ def _close_cap(cap):
 
 def _open_capture(url):
     """Open the HTTP stream with a short read timeout.
-
-    A short CAP_PROP_TIMEOUT makes read() time out (instead of blocking
-    forever) when the camera goes quiet, so a dropped or offline camera is
-    detected and retried instead of hanging the viewer.
     """
     cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-    # CAP_PROP_TIMEOUT is not exposed by every OpenCV build. Setting a short
-    # read timeout keeps a silent/dropped stream from blocking the viewer
-    # forever; if the constant is unavailable, read() still returns quickly
-    # thanks to CAP_PROP_BUFFERSIZE=1, and the retry loop handles it.
     timeout_prop = getattr(cv2, "CAP_PROP_TIMEOUT", None)
     if timeout_prop is not None:
         cap.set(timeout_prop, 500)
@@ -31,13 +23,6 @@ def _open_capture(url):
 
 
 def _read_with_retry(cap, url, max_retries=5):
-    """Read one frame, surviving transient network failures.
-
-    On any cv2/OS error or a (False, None) read it closes the capture,
-    waits, re-opens the stream, and retries -- instead of breaking out and
-    quitting. Returns a frame when one arrives, or None if the stream stayed
-    dead after max_retries attempts.
-    """
     attempts = 0
     while attempts < max_retries:
         attempts += 1
@@ -65,9 +50,7 @@ def _read_with_retry(cap, url, max_retries=5):
 
 
 def _cleanup(cap, out):
-    """Release any open capture/writer and close every OpenCV window.
-
-    Called from finally on every exit path so nothing is left hanging."""
+    
     _close_cap(cap)
     if out is not None:
         out.release()
