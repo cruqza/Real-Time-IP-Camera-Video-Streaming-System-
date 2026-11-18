@@ -76,8 +76,7 @@ def main():
     if not ipcam_url:
         print(
             "Error: camera address not configured. Set CAMERA_URL in your "
-            "environment, or create a .env file next to camerap.py "
-            "(listed in .gitignore)."
+        
         )
         sys.exit(1)
     
