@@ -3,7 +3,17 @@ import cv2
 import os
 import sys
 import time
+from collections import deque
 from datetime import datetime
+
+# Connection timeouts in milliseconds (needs OpenCV 4.5.2+).
+OPEN_TIMEOUT_MS = 5000
+READ_TIMEOUT_MS = 2000
+
+# Recording frame rate limits, used when the measured FPS is not usable yet.
+DEFAULT_RECORD_FPS = 15.0
+MIN_RECORD_FPS = 1.0
+MAX_RECORD_FPS = 60.0
 
 
 def _close_cap(cap):
@@ -13,14 +23,44 @@ def _close_cap(cap):
 
 
 def _open_capture(url):
-    """Open the HTTP stream with a short read timeout.
+    """Open the stream with open and read timeouts.
+
+    The timeouts must be passed when the capture is created; setting them
+    afterwards with cap.set() has no effect. Older OpenCV builds without these
+    properties fall back to a plain open.
     """
-    cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
+    open_prop = getattr(cv2, "CAP_PROP_OPEN_TIMEOUT_MSEC", None)
+    read_prop = getattr(cv2, "CAP_PROP_READ_TIMEOUT_MSEC", None)
+
+    if open_prop is not None and read_prop is not None:
+        params = [open_prop, OPEN_TIMEOUT_MS, read_prop, READ_TIMEOUT_MS]
+        cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG, params)
+    else:
+        cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
+
     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-    timeout_prop = getattr(cv2, "CAP_PROP_TIMEOUT", None)
-    if timeout_prop is not None:
-        cap.set(timeout_prop, 500)
     return cap
+
+
+class FpsMeter:
+    """Rolling FPS over the last `window` seconds, so drops show up quickly."""
+
+    def __init__(self, window=1.0):
+        self.window = window
+        self.times = deque()
+
+    def tick(self):
+        now = time.time()
+        self.times.append(now)
+        while self.times and now - self.times[0] > self.window:
+            self.times.popleft()
+
+    @property
+    def fps(self):
+        if len(self.times) < 2:
+            return 0.0
+        span = self.times[-1] - self.times[0]
+        return (len(self.times) - 1) / span if span > 0 else 0.0
 
 
 def _read_with_retry(cap, url, max_retries=5):
@@ -83,7 +123,7 @@ def main():
     if not ipcam_url:
         print(
             "Error: camera address not configured. Set CAMERA_URL in your "
-
+            "environment or in a .env file next to this script"
         )
         sys.exit(1)
 
@@ -91,8 +131,7 @@ def main():
     cap = None
     out = None
     recording = False
-    frame_count = 0
-    start_time = time.time()
+    fps_meter = FpsMeter(window=1.0)
 
     try:
         cap = _open_capture(ipcam_url)
@@ -114,9 +153,8 @@ def main():
                 print("Could not recover the video stream. Exiting.")
                 break
 
-            frame_count += 1
-            elapsed = time.time() - start_time
-            fps_est = frame_count / elapsed if elapsed > 0 else 0.0
+            fps_meter.tick()
+            fps_est = fps_meter.fps
 
             frame = process_frame(
                 frame,
@@ -142,8 +180,9 @@ def main():
                     recording = False
                     print("Recording stopped.")
                 else:
-                    out = _start_recording(frame)
-                    recording = True
+                    out = _start_recording(frame, fps_est)
+                    # Only flag recording when the writer really opened.
+                    recording = out is not None
 
     except KeyboardInterrupt:
         print("\nInterrupted by user. Shutting down.")
@@ -200,15 +239,22 @@ def _capture_screenshot(frame):
         print(f"Failed to save screenshot to {path}")
 
 
-def _start_recording(frame):
-    """Start recording the processed frame to a timestamped MP4."""
+def _start_recording(frame, fps_est):
+    """Start recording the processed frame to a timestamped MP4.
+
+    The file's frame rate matches the stream's measured FPS, so playback runs
+    at real speed. Returns None if the writer could not be opened.
+    """
+    fps = fps_est if fps_est >= MIN_RECORD_FPS else DEFAULT_RECORD_FPS
+    fps = min(fps, MAX_RECORD_FPS)
+
     path = f"recording_{_timestamp()}.mp4"
-    fourcc = cv2.VideoWriter_fourcc(*"MP4V")
-    writer = cv2.VideoWriter(path, fourcc, 30.0, (frame.shape[1], frame.shape[0]), isColor=True)
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    writer = cv2.VideoWriter(path, fourcc, fps, (frame.shape[1], frame.shape[0]), isColor=True)
     if not writer.isOpened():
         print(f"Failed to start recording -> {path}")
         return None
-    print(f"Recording started -> {path}")
+    print(f"Recording started at {fps:.1f} FPS -> {path}")
     return writer
 
 
@@ -220,4 +266,3 @@ def _stop_recording(writer):
 
 if __name__ == "__main__":
     main()
-
