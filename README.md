@@ -29,31 +29,12 @@ pip install opencv-python
 
 Set the camera address in one of two ways.
 
-**Option 1: environment variable**
-
-```bash
-# macOS / Linux
-export CAMERA_URL="http://192.168.1.50:8080/video"
-
-# Windows (PowerShell)
-$env:CAMERA_URL = "http://192.168.1.50:8080/video"
-```
-
-**Option 2: `.env` file** in the same folder as the script:
-
-```
-CAMERA_URL=http://192.168.1.50:8080/video
-```
-
-Add `.env` to `.gitignore` so the address and any credentials are never committed.
 
 ## Usage
 
 ```bash
-python main.py
+python camerap.py
 ```
-
-(Use whatever name you gave the script.)
 
 ### Keyboard controls
 
