@@ -35,17 +35,14 @@ Set the camera address in one of two ways.
 **Option 1: environment variable**
 
 ```bash
-# macOS / Linux
-export CAMERA_URL="http://192.168.1.50:8080/video"
-
 # Windows (PowerShell)
-$env:CAMERA_URL = "http://192.168.1.50:8080/video"
+$env:CAMERA_URL = "http://102.00.1.050:8080/video"
 ```
 
 **Option 2: `.env` file** in the same folder as the script:
 
 ```
-CAMERA_URL=http://192.168.1.50:8080/video
+CAMERA_URL=http://102.968.100.00:8080/video
 ```
 
 Add `.env` to `.gitignore` so the address and any credentials are never committed.
@@ -302,23 +299,3 @@ python test.py --camera-url http://192.168.1.23:8080/video   # your real phone (
 - **FPS drops a lot with YOLO on**: raise `YOLO_EVERY_N_FRAMES`, lower `YOLO_IMAGE_SIZE`, or press `Y` to switch it off.
 - **"Failed to start recording"**: the MP4 writer couldn't open (no write permission, or the codec isn't available). Recording stays off.
 
-## Changelog
-
-- **Automated tests** (`test.py`): TC01-TC10 with a fake camera and evidence images.
-- **No overwrites**: `_unique_path()` adds `_2`, `_3`... when a screenshot or recording with the same timestamp already exists.
-- **Browser dashboard** (`dashboard.py`, Flask): live MJPEG streams for every camera, per-camera and all-camera controls, an activity log and downloadable saved files.
-- **Multiple camera support**: up to 9 streams in a grid, each read in its own thread with its own detectors and recorder. Number keys choose which camera the controls act on. Saved files now include the camera name.
-- **Automatic recording on motion** added: starts after sustained motion, includes a 2 s pre-roll and stops after 5 s of quiet, toggled with `A`. Clips are saved as `recordings/motion_*.mp4`.
-- **YOLO object detection** added: YOLOv8n draws labelled boxes around detected objects, toggled with `Y`. It's optional, and the app runs without `ultralytics`.
-- **Motion detection** added: MOG2 background subtraction highlights moving areas, with a status line and an `M` key to turn it on or off.
-- **Screenshots and recordings have their own folders** (`screenshots/`, `recordings/`), created automatically.
-- **On-screen feedback**: a 2-second confirmation for screenshots and recording start/stop, and a blinking red REC badge with the elapsed time while recording.
-- **URL validation** before connecting catches a missing scheme, a missing host, or a bad port with a clear message.
-- **Safe shutdown** reports and saves any recording still running when the program exits on Esc, Ctrl+C or an error.
-- **Timeouts now work.** The nonexistent `CAP_PROP_TIMEOUT` was replaced with `CAP_PROP_OPEN_TIMEOUT_MSEC` (5 s) and `CAP_PROP_READ_TIMEOUT_MSEC` (2 s), passed when the capture is created, which is the only way OpenCV applies them.
-- **Recordings play at real speed.** The writer uses the measured FPS (limited to 1 to 60, with 15 as the fallback) instead of a fixed 30.
-- **A failed recording no longer looks like it started.** `recording` is only set when the writer actually opened.
-- **Full config error message.** It now says to set `CAMERA_URL` in the environment or a `.env` file, with an example.
-- **FourCC fixed** to lowercase `mp4v`, the standard MP4 code in OpenCV.
-- **Rolling FPS.** The overlay shows FPS over the last second instead of the average since startup, so drops show up straight away.
-- **Fixed: reconnection never recovered the stream.** `_read_with_retry` opened a new capture on failure but returned only the frame, so `main()` kept reading from the old, released capture and every read after a reconnect failed. It now returns `(frame, cap)`, and `main()` stores the returned capture with `frame, cap = _read_with_retry(cap, ipcam_url)`.
