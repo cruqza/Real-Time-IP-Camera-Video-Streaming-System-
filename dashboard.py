@@ -1,7 +1,4 @@
 # Browser dashboard for the IP camera viewer (Flask).
-
-
-
 import atexit
 import os
 import sys
