@@ -251,6 +251,20 @@ Ctrl+C stops the server, saves any running recordings and releases the cameras.
 
 **Note**: recordings use the `mp4v` codec, so download them and play them in VLC. Most browsers won't play them inline. The dashboard has no login, so only run it on a network you trust.
 
+## Automated tests (`test.py`)
+
+Runs test cases TC01-TC10 against `camerap.py` and saves evidence.
+
+```bash
+python test.py                 # all ten tests, using a built-in fake camera
+python test.py TC06 TC07       # only some tests
+python test.py --camera-url http://192.168.1.23:8080/video   # your real phone (TC08 skipped)
+```
+
+- A fake IP camera (MJPEG over HTTP, 1280x720, ~15 FPS) runs inside the script on port 8090 and can be switched off to simulate a Wi-Fi drop.
+- Each test runs the real `camerap.main()` in its own process. Only `cv2.imshow`, `cv2.waitKey` and `cv2.destroyAllWindows` are replaced, to save the window's frames and press scripted keys. TC10 sends a real SIGINT (Ctrl+C).
+- Output in `test_output/`: `evidence/` images, the screenshots and recordings each test saved, and `results.json`. Exit code 0 means every test passed.
+
 ## How the code is organised
 
 | Function | Purpose |
@@ -290,6 +304,8 @@ Ctrl+C stops the server, saves any running recordings and releases the cameras.
 
 ## Changelog
 
+- **Automated tests** (`test.py`): TC01-TC10 with a fake camera and evidence images.
+- **No overwrites**: `_unique_path()` adds `_2`, `_3`... when a screenshot or recording with the same timestamp already exists.
 - **Browser dashboard** (`dashboard.py`, Flask): live MJPEG streams for every camera, per-camera and all-camera controls, an activity log and downloadable saved files.
 - **Multiple camera support**: up to 9 streams in a grid, each read in its own thread with its own detectors and recorder. Number keys choose which camera the controls act on. Saved files now include the camera name.
 - **Automatic recording on motion** added: starts after sustained motion, includes a 2 s pre-roll and stops after 5 s of quiet, toggled with `A`. Clips are saved as `recordings/motion_*.mp4`.

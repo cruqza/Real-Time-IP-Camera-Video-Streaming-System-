@@ -1,16 +1,6 @@
-"""
-Browser dashboard for the IP camera viewer (Flask).
+# Browser dashboard for the IP camera viewer (Flask).
 
-Shows every camera from camerap.py as a live MJPEG stream in the browser,
-with buttons for screenshots, recording, motion detection, YOLO and
-auto-recording, plus a list of saved files to download.
 
-Run:   python dashboard.py
-Open:  http://localhost:5000   (or http://<this-PC's-IP>:5000 from another device)
-
-It reuses the camera configuration (.env / CAMERA_URLS / CAMERA_URL) and all
-the processing classes from camerap.py, so both files must sit in the same folder.
-"""
 
 import atexit
 import os

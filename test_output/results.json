@@ -1,0 +1,131 @@
+{
+  "run_at": "2026-11-20 14:08:41",
+  "camera_url": "http://127.0.0.1:8090/video",
+  "results": [
+    {
+      "id": "TC01",
+      "name": "Live stream starts",
+      "did": "Ran camerap.py with the correct camera URL.",
+      "expected": "A window shows live video within a few seconds.",
+      "actual": "First live frame 3.51 s after connecting; the window kept updating (88 refreshes in 4 s), then Esc closed it.",
+      "passed": true,
+      "evidence": [
+        "D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\evidence\\TC01_live.jpg"
+      ],
+      "log": "Loading YOLO model yolov8n.pt...\nYOLO ready.\nConnecting to Phone IP Camera at http://127.0.0.1:8090/video...\n[test] first frame\n[test] key 27 at 4.0s"
+    },
+    {
+      "id": "TC02",
+      "name": "Invalid URL",
+      "did": "Ran camerap.py with CAMERA_URL=htp://camera.",
+      "expected": "A clear error message; the program exits cleanly with no traceback.",
+      "actual": "Printed: \"Error (Phone IP Camera): Invalid camera URL 'htp://camera'. It must start with http://, https:// or rtsp://, e.g. http://192.168.1.50:8080/video\". Exit code 1, no traceback.",
+      "passed": true,
+      "evidence": [
+        "D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\evidence\\TC02_invalid_url.png"
+      ],
+      "log": "Error (Phone IP Camera): Invalid camera URL 'htp://camera'. It must start with http://, https:// or rtsp://, e.g. http://192.168.1.50:8080/video"
+    },
+    {
+      "id": "TC03",
+      "name": "Camera unavailable",
+      "did": "Ran camerap.py with a camera URL where no camera answers (http://127.0.0.1:8099/video).",
+      "expected": "Reports that the camera cannot be reached in a reasonable time, does not hang, exits cleanly.",
+      "actual": "Reported \"could not connect\" and exited after 8.4 s, exit code 0, no traceback.",
+      "passed": true,
+      "evidence": [
+        "D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\evidence\\TC03_unavailable.png",
+        "D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\evidence\\TC03_window.jpg"
+      ],
+      "log": "Loading YOLO model yolov8n.pt...\nYOLO ready.\nConnecting to Phone IP Camera at http://127.0.0.1:8099/video...\n[Phone IP Camera] could not connect. Check the URL, that the camera is on, and that it is on the same Wi-Fi.\nCould not connect to any camera. Check the URLs, that the cameras are powered on, and that they are on the same Wi-Fi.\n[ WARN:0@5.089] global cap_ffmpeg_impl.hpp:453 _opencv_ffmpeg_interrupt_callback Stream timeout triggered after 5079.331000 ms"
+    },
+    {
+      "id": "TC04",
+      "name": "Overlays",
+      "did": "Watched the stream for 30 seconds and saved the window at 5 s, 6 s and 30 s.",
+      "expected": "Timestamp updates every second; camera name, resolution and FPS are shown and readable.",
+      "actual": "Camera name, '960x540', the date/time and FPS are drawn on every frame. Clock read from the images: see images. The clock area changed between 5 s and 6 s: True.",
+      "passed": true,
+      "evidence": [
+        "D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\evidence\\TC04_t05s.jpg",
+        "D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\evidence\\TC04_t06s.jpg",
+        "D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\evidence\\TC04_t30s.jpg"
+      ],
+      "log": "Loading YOLO model yolov8n.pt...\nYOLO ready.\nConnecting to Phone IP Camera at http://127.0.0.1:8090/video...\n[test] first frame\n[test] key 27 at 31.1s"
+    },
+    {
+      "id": "TC05",
+      "name": "Resizing",
+      "did": "Camera sends 1280x720; configured display width is 960.",
+      "expected": "Frames shown at that width with the aspect ratio kept.",
+      "actual": "Window frames were 960x540 (1280/720 = 1.778, 960/540 = 1.778). Nothing stretched.",
+      "passed": true,
+      "evidence": [
+        "D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\evidence\\TC05_resized.jpg"
+      ],
+      "log": "Loading YOLO model yolov8n.pt...\nYOLO ready.\nConnecting to Phone IP Camera at http://127.0.0.1:8090/video...\n[test] first frame\n[test] key 27 at 3.0s"
+    },
+    {
+      "id": "TC06",
+      "name": "Screenshot",
+      "did": "Pressed S at 2 s and again at 5 s.",
+      "expected": "Two separate timestamped images in screenshots/, with an on-screen confirmation each time.",
+      "actual": "Saved 2 files: screenshot_phone_ip_camera_20261120_140738.jpg, screenshot_phone_ip_camera_20261120_140740.jpg. The window showed \"Screenshot saved: ...\" after each press.",
+      "passed": true,
+      "evidence": [
+        "D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\evidence\\TC06_first_S.jpg",
+        "D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\evidence\\TC06_second_S.jpg",
+        "D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\TC06\\screenshots\\screenshot_phone_ip_camera_20261120_140738.jpg",
+        "D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\TC06\\screenshots\\screenshot_phone_ip_camera_20261120_140740.jpg"
+      ],
+      "log": "Loading YOLO model yolov8n.pt...\nYOLO ready.\nConnecting to Phone IP Camera at http://127.0.0.1:8090/video...\n[test] first frame\n[test] key 's' at 2.9s\nScreenshot saved -> D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\TC06\\screenshots\\screenshot_phone_ip_camera_20261120_140738.jpg\nScreenshot saved: screenshot_phone_ip_camera_20261120_140738.jpg\n[test] key 's' at 5.0s\nScreenshot saved -> D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\TC06\\screenshots\\screenshot_phone_ip_camera_20261120_140740.jpg\nScreenshot saved: screenshot_phone_ip_camera_20261120_140740.jpg\n[test] key 27 at 7.0s"
+    },
+    {
+      "id": "TC07",
+      "name": "Recording",
+      "did": "Pressed R at 2 s and again at 12 s (10 s apart).",
+      "expected": "Recording status shows while recording; a timestamped file in recordings/ plays and lasts about 10 seconds.",
+      "actual": "The window showed the red REC badge with a timer. File recording_phone_ip_camera_20261120_140750.mp4: 98 frames at 13.0 FPS = 7.5 s, 960x540, opens and plays.",
+      "passed": true,
+      "evidence": [
+        "D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\evidence\\TC07_recording.jpg"
+      ],
+      "log": "Loading YOLO model yolov8n.pt...\nYOLO ready.\nConnecting to Phone IP Camera at http://127.0.0.1:8090/video...\n[test] first frame\n[test] key 'r' at 3.3s\nRecording started at 13.0 FPS -> D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\TC07\\recordings\\recording_phone_ip_camera_20261120_140750.mp4\nRecording started (1 camera)\n[test] key 'r' at 12.0s\n[Phone IP Camera] Recording stopped and saved.\nRecording saved\n[test] key 27 at 14.0s"
+    },
+    {
+      "id": "TC08",
+      "name": "Connection drop",
+      "did": "While streaming, switched the fake camera's network off for 10 s, then on.",
+      "expected": "Reports the drop and retries; recovers, or exits cleanly once its retry limit is reached.",
+      "actual": "Reported the drop and retried 5 times, about 1 s apart. The camera was still gone after the retry limit, so the program said the stream was lost and exited cleanly with no traceback.",
+      "passed": true,
+      "evidence": [
+        "D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\evidence\\TC08_before.jpg",
+        "D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\evidence\\TC08_terminal.png",
+        "D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\evidence\\TC08_after.jpg"
+      ],
+      "log": "Loading YOLO model yolov8n.pt...\nYOLO ready.\nConnecting to Phone IP Camera at http://127.0.0.1:8090/video...\n[test] first frame\n  [Phone IP Camera] No frame received. Reconnecting in 1s...\n  [Phone IP Camera] No frame received. Reconnecting in 1s...\n  [Phone IP Camera] No frame received. Reconnecting in 1s...\n  [Phone IP Camera] No frame received. Reconnecting in 1s...\n  [Phone IP Camera] No frame received. Reconnecting in 1s...\n[Phone IP Camera] stream lost after several reconnection attempts.\nCould not recover any video stream. Exiting.\n[http @ 000001a88ef77040] Stream ends prematurely at 964519, should be 18446744073709551615"
+    },
+    {
+      "id": "TC09",
+      "name": "Esc during recording",
+      "did": "Pressed R at 2 s, then Esc at 8 s.",
+      "expected": "Program exits, window closes, recording is saved and plays.",
+      "actual": "Program exited (code 0), window closed: True. Saved recording_phone_ip_camera_20261120_140823.mp4: 5.0 s, plays.",
+      "passed": true,
+      "evidence": [
+        "D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\evidence\\TC09_recording.jpg"
+      ],
+      "log": "Loading YOLO model yolov8n.pt...\nYOLO ready.\nConnecting to Phone IP Camera at http://127.0.0.1:8090/video...\n[test] first frame\n[test] key 'r' at 2.8s\nRecording started at 12.6 FPS -> D:\\data_cience\\DS_Assingments\\WEEK_1\\project5\\test_output\\TC09\\recordings\\recording_phone_ip_camera_20261120_140823.mp4\nRecording started (1 camera)\n[test] key 27 at 8.1s\n[Phone IP Camera] Recording finished and saved."
+    },
+    {
+      "id": "TC10",
+      "name": "TC10",
+      "did": "",
+      "expected": "",
+      "actual": "Test error: Unsupported signal: 2",
+      "passed": false,
+      "evidence": []
+    }
+  ]
+}
