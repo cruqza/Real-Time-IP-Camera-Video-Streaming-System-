@@ -1,3 +1,4 @@
+
 import cv2
 import os
 import sys
@@ -23,6 +24,12 @@ def _open_capture(url):
 
 
 def _read_with_retry(cap, url, max_retries=5):
+    """Read one frame, reconnecting on failure.
+
+    Returns a (frame, cap) tuple. The capture may have been replaced by a
+    fresh one during reconnection, so the caller must keep the returned cap.
+    frame is None if every retry failed.
+    """
     attempts = 0
     while attempts < max_retries:
         attempts += 1
@@ -37,7 +44,7 @@ def _read_with_retry(cap, url, max_retries=5):
             continue
 
         if ret:
-            return frame
+            return frame, cap
 
         # read() returned (False, None): no frame this cycle.
         print("  No frame received. Reconnecting in 1s...")
@@ -46,11 +53,11 @@ def _read_with_retry(cap, url, max_retries=5):
         cap = _open_capture(url)
 
     # Retries exhausted; the stream is genuinely dead.
-    return None
+    return None, cap
 
 
 def _cleanup(cap, out):
-    
+
     _close_cap(cap)
     if out is not None:
         out.release()
@@ -76,10 +83,10 @@ def main():
     if not ipcam_url:
         print(
             "Error: camera address not configured. Set CAMERA_URL in your "
-        
+
         )
         sys.exit(1)
-    
+
     # Capture + recording state.
     cap = None
     out = None
@@ -100,7 +107,8 @@ def main():
         print(f"Connected to camera at {ipcam_url}")
 
         while True:
-            frame = _read_with_retry(cap, ipcam_url)
+            # Keep the returned cap: it is a new object after a reconnect.
+            frame, cap = _read_with_retry(cap, ipcam_url)
             if frame is None:
                 # Stream stayed dead after several reconnection attempts.
                 print("Could not recover the video stream. Exiting.")
@@ -212,3 +220,4 @@ def _stop_recording(writer):
 
 if __name__ == "__main__":
     main()
+
