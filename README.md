@@ -25,10 +25,6 @@ pip install opencv-python
 - A phone running an IP camera app (for example "IP Webcam" on Android) or any camera that serves an HTTP/RTSP video stream
 - The computer and the camera on the **same Wi-Fi network**
 
-## Setup
-
-Set the camera address in one of two ways.
-
 
 ## Usage
 
