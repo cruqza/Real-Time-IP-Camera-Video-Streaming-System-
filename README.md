@@ -31,10 +31,17 @@ Set the camera address in one of two ways.
 
 **Option 1: environment variable**
 
-# example
-$env:CAMERA_URL = "http://000.168.1.00:8080/video"
+```bash
+
+# Windows (PowerShell)
+$env:CAMERA_URL = "http://192.168.1.50:8080/video"
 ```
 
+**Option 2: `.env` file** in the same folder as the script:
+
+```
+CAMERA_URL=http://192.168.1.50:8080/video
+```
 
 Add `.env` to `.gitignore` so the address and any credentials are never committed.
 
@@ -44,17 +51,19 @@ Add `.env` to `.gitignore` so the address and any credentials are never committe
 python camerap.py
 ```
 
+(Use whatever name you gave the script.)
+
 ### Keyboard controls
 
 The video window must be focused.
 
 | Key   | Action                                                              |
 |-------|---------------------------------------------------------------------|
-| `S`   | Save a screenshot as `screenshot_YYYYMMDD_HHMMSS.jpg`               |
-| `R`   | Start or stop recording to `recording_YYYYMMDD_HHMMSS.mp4`, at the stream's measured FPS |
+| `S`   | Save a screenshot to `screenshots/screenshot_YYYYMMDD_HHMMSS.jpg`, with a 2-second on-screen confirmation |
+| `R`   | Start or stop recording to `recordings/recording_YYYYMMDD_HHMMSS.mp4`, at the stream's measured FPS. A blinking red REC badge and the elapsed time show while it records |
 | `Esc` | Quit                                                                |
 
-Screenshots and recordings are saved to the folder you run the script from, and they include the overlay.
+Screenshots go to `screenshots/` and recordings to `recordings/`, both next to the script and created if they're missing. Both include the info overlay. The REC badge and confirmations show only in the window.
 
 ## How the code is organised
 
@@ -72,9 +81,9 @@ Screenshots and recordings are saved to the folder you run the script from, and 
 
 ## Troubleshooting
 
+- **"Invalid camera URL"**: the address must start with `http://`, `https://` or `rtsp://` and include a host, plus a numeric port if it has one.
 - **"camera address not configured"**: `CAMERA_URL` isn't set and no `.env` file was found.
 - **`Error number -138` / connection timed out**: the PC can't reach the phone. Check that both are on the same network (not a guest network), the camera app's server is running, the phone's screen is on, and no VPN is active.
 - **"Could not connect to the camera"**: check the URL, that the camera app is running, and that both devices are on the same Wi-Fi.
 - **"Could not recover the video stream"**: the stream dropped and 5 reconnection attempts failed.
 - **"Failed to start recording"**: the MP4 writer couldn't open (no write permission, or the codec isn't available). Recording stays off.
-

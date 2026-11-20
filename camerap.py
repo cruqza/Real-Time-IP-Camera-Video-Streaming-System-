@@ -1,10 +1,10 @@
-
 import cv2
 import os
 import sys
 import time
 from collections import deque
 from datetime import datetime
+from urllib.parse import urlparse
 
 # Connection timeouts in milliseconds (needs OpenCV 4.5.2+).
 OPEN_TIMEOUT_MS = 5000
@@ -14,6 +14,33 @@ READ_TIMEOUT_MS = 2000
 DEFAULT_RECORD_FPS = 15.0
 MIN_RECORD_FPS = 1.0
 MAX_RECORD_FPS = 60.0
+
+# Output folders, created next to this script on first use.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SCREENSHOT_DIR = os.path.join(BASE_DIR, "screenshots")
+RECORDING_DIR = os.path.join(BASE_DIR, "recordings")
+
+# How long an on-screen confirmation stays visible, in seconds.
+MESSAGE_SECONDS = 2.0
+
+VALID_SCHEMES = ("http", "https", "rtsp")
+
+
+def _validate_url(url):
+    """Return an error message if the URL is malformed, else None."""
+    parsed = urlparse(url)
+    if parsed.scheme not in VALID_SCHEMES:
+        return (
+            f"Invalid camera URL '{url}'. It must start with "
+            "http://, https:// or rtsp://, e.g. http://192.168.1.50:8080/video"
+        )
+    if not parsed.hostname:
+        return f"Invalid camera URL '{url}'. It has no host or IP address."
+    try:
+        parsed.port  # raises ValueError for a non-numeric or out-of-range port
+    except ValueError:
+        return f"Invalid camera URL '{url}'. The port is not a valid number."
+    return None
 
 
 def _close_cap(cap):
@@ -123,15 +150,24 @@ def main():
     if not ipcam_url:
         print(
             "Error: camera address not configured. Set CAMERA_URL in your "
-            "environment or in a .env file next to this script"
+            "environment or in a .env file next to this script, e.g.\n"
+            "  CAMERA_URL=http://192.168.1.50:8080/video"
         )
+        sys.exit(1)
+
+    url_error = _validate_url(ipcam_url)
+    if url_error:
+        print(f"Error: {url_error}")
         sys.exit(1)
 
     # Capture + recording state.
     cap = None
     out = None
     recording = False
+    rec_start = 0.0
     fps_meter = FpsMeter(window=1.0)
+    message = ""          # short on-screen confirmation text
+    message_until = 0.0   # time.time() after which it disappears
 
     try:
         cap = _open_capture(ipcam_url)
@@ -162,33 +198,49 @@ def main():
                 fps_est=fps_est,
             )
 
-            # Recording: write the processed (resized) frame.
+            # Recording: write the processed frame (without the REC badge).
             if recording and out is not None:
                 out.write(frame)
 
-            cv2.imshow("Phone IP Camera", frame)
+            # Status layer for the window only: REC badge and confirmations.
+            display = frame.copy()
+            if recording:
+                _draw_rec_status(display, time.time() - rec_start)
+            if message and time.time() < message_until:
+                _draw_message(display, message)
+
+            cv2.imshow("Phone IP Camera", display)
 
             key = cv2.waitKey(1) & 0xFF
             if key == 27:  # Esc -> exit
                 break
-            elif key == ord("s"):  # S -> screenshot
-                _capture_screenshot(frame)
-            elif key == ord("r"):  # R -> toggle recording
+            elif key in (ord("s"), ord("S")):  # S -> screenshot
+                path = _capture_screenshot(frame)
+                message = (f"Screenshot saved: {os.path.basename(path)}"
+                           if path else "Screenshot failed")
+                message_until = time.time() + MESSAGE_SECONDS
+            elif key in (ord("r"), ord("R")):  # R -> toggle recording
                 if recording:
                     _stop_recording(out)
                     out = None
                     recording = False
-                    print("Recording stopped.")
+                    print("Recording stopped and saved.")
+                    message = "Recording saved"
                 else:
                     out = _start_recording(frame, fps_est)
                     # Only flag recording when the writer really opened.
                     recording = out is not None
+                    rec_start = time.time()
+                    message = "Recording started" if recording else "Recording failed"
+                message_until = time.time() + MESSAGE_SECONDS
 
     except KeyboardInterrupt:
         print("\nInterrupted by user. Shutting down.")
     except Exception as exc:
         print(f"Error: {exc}")
     finally:
+        if recording and out is not None:
+            print("Recording finished and saved.")
         _cleanup(cap, out)
 
 
@@ -230,13 +282,40 @@ def _timestamp():
     return datetime.now().strftime("%Y%m%d_%H%M%S")
 
 
+def _draw_rec_status(frame, elapsed):
+    """Draw a red REC dot and the elapsed time in the top-right corner."""
+    mins, secs = divmod(int(elapsed), 60)
+    text = f"REC {mins:02d}:{secs:02d}"
+    w = frame.shape[1]
+    (tw, th), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)
+    x = w - tw - 20
+    # Blink the dot once a second.
+    if int(elapsed * 2) % 2 == 0:
+        cv2.circle(frame, (x - 14, 26), 8, (0, 0, 255), -1, cv2.LINE_AA)
+    cv2.putText(frame, text, (x, 33), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                (0, 0, 255), 2, cv2.LINE_AA)
+
+
+def _draw_message(frame, text):
+    """Draw a short confirmation at the bottom of the frame on a dark band."""
+    h, w = frame.shape[:2]
+    cv2.rectangle(frame, (0, h - 40), (w, h), (0, 0, 0), -1)
+    cv2.putText(frame, text, (10, h - 13), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
+                (255, 255, 255), 1, cv2.LINE_AA)
+
+
 def _capture_screenshot(frame):
-    """Save the annotated current frame to a timestamped JPG."""
-    path = f"screenshot_{_timestamp()}.jpg"
+    """Save the annotated current frame to screenshots/ as a timestamped JPG.
+
+    Returns the saved path, or None on failure.
+    """
+    os.makedirs(SCREENSHOT_DIR, exist_ok=True)
+    path = os.path.join(SCREENSHOT_DIR, f"screenshot_{_timestamp()}.jpg")
     if cv2.imwrite(path, frame):
         print(f"Screenshot saved -> {path}")
-    else:
-        print(f"Failed to save screenshot to {path}")
+        return path
+    print(f"Failed to save screenshot to {path}")
+    return None
 
 
 def _start_recording(frame, fps_est):
@@ -248,7 +327,8 @@ def _start_recording(frame, fps_est):
     fps = fps_est if fps_est >= MIN_RECORD_FPS else DEFAULT_RECORD_FPS
     fps = min(fps, MAX_RECORD_FPS)
 
-    path = f"recording_{_timestamp()}.mp4"
+    os.makedirs(RECORDING_DIR, exist_ok=True)
+    path = os.path.join(RECORDING_DIR, f"recording_{_timestamp()}.mp4")
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     writer = cv2.VideoWriter(path, fourcc, fps, (frame.shape[1], frame.shape[0]), isColor=True)
     if not writer.isOpened():
